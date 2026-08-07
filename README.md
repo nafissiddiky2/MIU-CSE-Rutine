@@ -30,8 +30,9 @@ miu-routine/
 │ └── style.css # All styles
 ├── js/
 │ └── auth.js # Authentication & registration logic
-└── README.md #
-⚠️ Important Notes
+└── README.md 
+
+##⚠️ Important Notes
 No backend required - Fully static site
 
 Student data stored in Google Sheets - No local database
