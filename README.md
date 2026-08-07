@@ -21,17 +21,18 @@ A web-based class routine management system for Manarat International University
 - **Deployment:** GitHub Pages / Any static hosting
 
 ## 📁 Project Structure
+```text
 miu-routine/
-├── index.html # Entry point - redirects to login
-├── login.html # Student login page
-├── register.html # Student registration page
-├── dashboard.html # Main dashboard with routine display
+├── index.html                 # Entry point - redirects to login
+├── login.html                 # Student login page
+├── register.html              # Student registration page
+├── dashboard.html             # Main dashboard with routine display
 ├── css/
-│ └── style.css # All styles
+│   └── style.css             # All styles
 ├── js/
-│ └── auth.js # Authentication & registration logic
-└── README.md 
-
+│   └── auth.js               # Authentication & registration logic
+└── README.md
+```
 ## ⚠️ Important Notes
 No backend required - Fully static site
 
