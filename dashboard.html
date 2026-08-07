@@ -107,6 +107,21 @@
             return JSON.parse(user);
         }
 
+        // Simple time format: adds AM or PM based on start hour
+        function formatTime(timeStr) {
+    // Split "9:00-10:00" into parts
+    const parts = timeStr.split('-');
+    
+    // Get the start hour from the first part
+    const startPart = parts[0].trim();
+    const startHour = parseInt(startPart.split(':')[0]);
+    
+    // Simple rule: 9,10,11 = AM | 12,1,2,3,4 = PM
+    const ampm = (startHour >= 9 && startHour <= 11) ? 'AM' : 'PM';
+    
+    return timeStr + ' ' + ampm;
+}
+
         function parseCSV(csv) {
             const lines = csv.split('\n');
             const routines = [];
@@ -168,9 +183,14 @@
                             const match = token.match(/^(\d+)(\([FM]\))?/);
                             if (match) {
                                 routines.push({
-                                    day: currentDay, time: timeSlots[j-2],
-                                    batch: match[1], batchDisplay: match[1] + (match[2] || ''),
-                                    section: match[2] || '', course, room, teacher
+                                    day: currentDay, 
+                                    time: timeSlots[j-2],
+                                    batch: match[1], 
+                                    batchDisplay: match[1] + (match[2] || ''),
+                                    section: match[2] || '', 
+                                    course, 
+                                    room, 
+                                    teacher
                                 });
                             }
                         }
@@ -226,7 +246,6 @@
             const selectedRoom = document.getElementById('searchRoom').value;
             const selectedTeacher = document.getElementById('searchTeacher').value;
             
-            // UPDATE BATCH INFO
             const batchInfo = document.getElementById('batchInfo');
             if (selectedTeacher) {
                 batchInfo.textContent = '👨‍🏫 Teacher: ' + selectedTeacher;
@@ -264,8 +283,9 @@
             let html = '<table><thead><tr><th>⏰ Time</th><th>📖 Course</th><th>👥 Batch</th><th>🏫 Room</th><th>👨‍🏫 Teacher</th></tr></thead><tbody>';
             
             Object.keys(grouped).sort().forEach(time => {
+                const displayTime = formatTime(time);
                 grouped[time].forEach((r, i) => {
-                    html += `<tr>${i === 0 ? `<td rowspan="${grouped[time].length}" class="time-cell">${time}</td>` : ''}
+                    html += `<tr>${i === 0 ? `<td rowspan="${grouped[time].length}" class="time-cell">${displayTime}</td>` : ''}
                         <td><strong>${r.course}</strong></td>
                         <td><span class="batch-badge">Batch ${r.batchDisplay}</span></td>
                         <td>${r.room ? `<span class="room-badge">${r.room}</span>` : 'TBA'}</td>
