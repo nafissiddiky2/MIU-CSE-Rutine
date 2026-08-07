@@ -38,8 +38,6 @@ No backend required - Fully static site
 
 Student data stored in Google Sheets - No local database
 
-Login uses localStorage - Not secure for production (demo purpose)
-
 CORS - Google Sheets must allow cross-origin requests
 
 Session - 15-minute default timeout with optional 15-day "Remember Me"
