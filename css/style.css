@@ -568,7 +568,7 @@ select option {
 .footer a,
 .footer a:link,
 .footer a:visited {
-    color: #f2f7f5;
+    color: #000503;
     text-decoration: none;
     font-weight: 600;
 }
