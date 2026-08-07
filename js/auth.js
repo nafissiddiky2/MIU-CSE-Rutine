@@ -1,5 +1,5 @@
 // Google Sheets Web App URL for student registration
-const STUDENT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzoBPLzrMevEIwSg_Y5OeYvtyFBpg_V5UpxJAsH1spJ4EmgjOvoGuDZKfBT3sssIyGi4A/exec';
+const STUDENT_SHEET_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
 
 // Login Form Handler
 document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
@@ -11,14 +11,13 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     
     const errorDiv = document.getElementById('errorMessage');
     
-    // Simple validation
     if (!studentId || !password) {
         errorDiv.textContent = 'Please fill all fields';
         errorDiv.classList.add('show');
         return;
     }
     
-    // Extract batch from ID
+    // Extract batch from ID (e.g., 2465cse01176 -> 65)
     const batchMatch = studentId.match(/\d{2}(\d{2})/i);
     const batch = batchMatch ? batchMatch[1] : '00';
     
@@ -36,6 +35,7 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
         localStorage.setItem('miu_remember', 'true');
     }
     
+    // Redirect to dashboard
     window.location.href = 'dashboard.html';
 });
 
@@ -75,29 +75,29 @@ document.getElementById('registerForm')?.addEventListener('submit', async (e) =>
     submitBtn.disabled = true;
     submitBtn.textContent = 'Registering...';
     
-    // Save to Google Sheet
+    // Extract batch
     const batch = studentId.match(/\d{2}(\d{2})/i)?.[1] || '00';
     
+    // Try to save to Google Sheet
     try {
-        const response = await fetch(STUDENT_SHEET_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                student_id: studentId,
-                email: email,
-                phone: phone,
-                password: password,
-                batch: batch,
-                registration_date: new Date().toLocaleString()
-            })
-        });
-        
-        alert('Registration successful! Please login.');
-        window.location.href = 'login.html';
+        if (STUDENT_SHEET_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+            await fetch(STUDENT_SHEET_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    student_id: studentId,
+                    email: email,
+                    phone: phone,
+                    batch: batch,
+                    registration_date: new Date().toLocaleString()
+                })
+            });
+        }
     } catch (error) {
-        // Still allow registration even if sheet fails
-        alert('Registration successful! Please login.');
-        window.location.href = 'login.html';
+        console.log('Sheet save skipped or failed');
     }
+    
+    alert('Registration successful! Please login.');
+    window.location.href = 'login.html';
 });
