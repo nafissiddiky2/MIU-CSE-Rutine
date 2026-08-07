@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIU Routine System</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <script>
+        // Check if user is logged in (using localStorage)
+        const user = localStorage.getItem('miu_user');
+        if (user) {
+            window.location.href = 'dashboard.html';
+        } else {
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

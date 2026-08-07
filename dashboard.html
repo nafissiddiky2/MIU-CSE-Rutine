@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - MIU Routine System</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">📅 MIU Routine System</div>
+            <div class="nav-user">
+                <span id="userInfo">Loading...</span>
+                <button onclick="logout()" class="btn btn-outline">🚪 Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <div class="search-section">
+            <div class="date-navigator">
+                <button onclick="changeDay(-1)" class="btn btn-outline">◀ Yesterday</button>
+                <h2 id="currentDay">Today</h2>
+                <button onclick="changeDay(1)" class="btn btn-outline">Tomorrow ▶</button>
+            </div>
+            
+            <div class="filter-section">
+                <h3 style="margin-bottom:15px;color:#2d6a4f;">🔍 Filter Class Schedule</h3>
+                <div class="search-boxes">
+                    <div class="search-box">
+                        <label>👥 Select Batch</label>
+                        <select id="searchBatch" onchange="onFilterChange()">
+                            <option value="">📚 My Batch</option>
+                        </select>
+                    </div>
+                    <div class="search-box">
+                        <label>🏫 Select Room</label>
+                        <select id="searchRoom" onchange="onFilterChange()">
+                            <option value="">🏫 All Rooms</option>
+                        </select>
+                    </div>
+                    <div class="search-box">
+                        <label>👨‍🏫 Select Teacher</label>
+                        <select id="searchTeacher" onchange="onFilterChange()">
+                            <option value="">👨‍🏫 All Teachers</option>
+                        </select>
+                    </div>
+                    <button onclick="resetFilter()" class="btn btn-outline">↺ Reset Filters</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="routine-display">
+            <div class="routine-header">
+                <h3>📚 Class Schedule - <span id="displayDay"></span></h3>
+                <span id="batchInfo"></span>
+            </div>
+            <div id="routineTable" class="routine-table">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading routine data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1pH0ZzPfwNNvvFpDR8N7eDtqeXKd1KcDKNRz4ca42T9U/export?format=csv&gid=350123385';
+        
+        const teacherNames = {
+            'DMR': 'Prof. Dr. Mizanur Rahman', 'DRA': 'Prof. Dr. Ramit Azad',
+            'MRI': 'Mohammad Rafiqul Islam', 'TA': 'Tanvir Ahmed',
+            'ZH': 'Zahurul Haque', 'SSM': 'Shreshtha Sayantika Maitra',
+            'JF': 'Jannatul Ferdaous', 'NET': 'Noor Easrib Tiba',
+            'SA': 'Soaib Abdullah', 'HR': 'Hasibul Rupok',
+            'MH': 'Maoyejatun Hasana', 'MMU': 'Mohammad Monzu Uddin',
+            'DAKA': 'Dr. Mohammad Abul Kalam Azad', 'DSS': 'Dr. Sabiha Sultana',
+            'MT': 'Md. Toha', 'AAA': 'Ahmad Abdullah Arman',
+            'BT': 'Bushra Tasnim', 'DMMS': 'Dr. Mohammad Mohiuddin Sarker',
+            'SH': 'Md Shakil Hossain', 'ZI': 'Md. Zahidul Islam',
+            'MMM': 'Mohammed Mohaimen', 'JH': 'Jayed Hasan Rakib',
+            'MAS': 'MD. Adam Shafiullah', 'TK': 'Tahsin Kabir',
+            'DHR': 'Dr. Hafizur Rahman', 'MAI': 'Muhammad Asadul Islam',
+            'LJ': 'Ms. Liza Jourder'
+        };
+
+        let currentDate = new Date();
+        let currentBatch = '';
+        let allRoutines = [];
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        // Check auth
+        function checkAuth() {
+            const user = localStorage.getItem('miu_user');
+            if (!user) {
+                window.location.href = 'login.html';
+                return null;
+            }
+            return JSON.parse(user);
+        }
+
+        // Parse CSV
+        function parseCSV(csv) {
+            const lines = csv.split('\n');
+            const routines = [];
+            const dayMap = {
+                'sat': 'Saturday', 'sun': 'Sunday', 'mon': 'Monday',
+                'tue': 'Tuesday', 'wed': 'Wednesday', 'thu': 'Thursday', 'fri': 'Friday'
+            };
+            const timeSlots = [];
+            let currentDay = '';
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const cells = [];
+                let current = '', inQuotes = false;
+                for (let j = 0; j < line.length; j++) {
+                    if (line[j] === '"') inQuotes = !inQuotes;
+                    else if (line[j] === ',' && !inQuotes) { cells.push(current.trim()); current = ''; }
+                    else current += line[j];
+                }
+                cells.push(current.trim());
+                
+                const first = cells[0].toLowerCase().trim();
+                if (first === 'abbreviation') break;
+                if (first.startsWith('..........') || first.includes('jannatul')) break;
+                
+                if (cells[0] === 'Day' && cells[1] === 'Room') {
+                    for (let k = 2; k < cells.length; k++) {
+                        if (cells[k] && cells[k].includes(':')) timeSlots.push(cells[k]);
+                    }
+                    continue;
+                }
+                
+                if (first.includes('manarat') || first.includes('class routine') || first.includes('updated on')) continue;
+                if (dayMap[first]) { currentDay = dayMap[first]; continue; }
+                
+                if (currentDay && cells.length >= 3 && cells[1] && timeSlots.length > 0) {
+                    const room = cells[1];
+                    for (let j = 2; j < cells.length && j-2 < timeSlots.length; j++) {
+                        const data = cells[j]?.trim();
+                        if (!data || data === '') continue;
+                        
+                        let clean = data.replace(/^\(/, '').replace(/\)$/, '');
+                        const parts = clean.split('/');
+                        if (parts.length < 2) continue;
+                        
+                        let batchPart = parts[0].trim();
+                        let course = parts[1]?.trim() || '';
+                        let teacher = parts[2]?.trim() || '';
+                        
+                        if (parts.length === 4) {
+                            course = parts[1] + '/' + parts[2];
+                            teacher = parts[3]?.trim() || '';
+                        }
+                        
+                        const tokens = batchPart.split('+').map(t => t.trim());
+                        for (const token of tokens) {
+                            const match = token.match(/^(\d+)(\([FM]\))?/);
+                            if (match) {
+                                routines.push({
+                                    day: currentDay, time: timeSlots[j-2],
+                                    batch: match[1], batchDisplay: match[1] + (match[2] || ''),
+                                    section: match[2] || '', course, room, teacher
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            return routines;
+        }
+
+        // Fetch sheet data
+        async function fetchRoutineData() {
+            try {
+                const response = await fetch(SHEET_CSV_URL);
+                const csv = await response.text();
+                allRoutines = parseCSV(csv);
+                console.log('Loaded', allRoutines.length, 'routines');
+                populateDropdowns();
+                loadRoutine();
+            } catch (err) {
+                console.error('Error fetching data:', err);
+            }
+        }
+
+        // Populate dropdowns
+        function populateDropdowns() {
+            const batches = [...new Set(allRoutines.map(r => r.batchDisplay))].sort();
+            const rooms = [...new Set(allRoutines.map(r => r.room))].filter(Boolean).sort();
+            const teachers = [...new Set(allRoutines.map(r => r.teacher))].filter(Boolean).sort();
+            
+            const batchSelect = document.getElementById('searchBatch');
+            batches.forEach(b => batchSelect.innerHTML += `<option value="${b}">📚 Batch ${b}</option>`);
+            
+            const roomSelect = document.getElementById('searchRoom');
+            rooms.forEach(r => roomSelect.innerHTML += `<option value="${r}">🏫 ${r}</option>`);
+            
+            const teacherSelect = document.getElementById('searchTeacher');
+            teachers.forEach(t => {
+                teacherSelect.innerHTML += `<option value="${t}">👨‍🏫 ${t} - ${teacherNames[t] || t}</option>`;
+            });
+        }
+
+        function onFilterChange() {
+            const b = document.getElementById('searchBatch').value;
+            const r = document.getElementById('searchRoom').value;
+            const t = document.getElementById('searchTeacher').value;
+            if (b) { document.getElementById('searchRoom').value = ''; document.getElementById('searchTeacher').value = ''; }
+            if (r) { document.getElementById('searchBatch').value = ''; document.getElementById('searchTeacher').value = ''; }
+            if (t) { document.getElementById('searchBatch').value = ''; document.getElementById('searchRoom').value = ''; }
+            loadRoutine();
+        }
+
+        function loadRoutine() {
+            const day = days[currentDate.getDay()];
+            const selectedBatch = document.getElementById('searchBatch').value;
+            const selectedRoom = document.getElementById('searchRoom').value;
+            const selectedTeacher = document.getElementById('searchTeacher').value;
+            
+            let data = allRoutines.filter(r => r.day === day);
+            
+            if (selectedBatch) data = data.filter(r => r.batchDisplay === selectedBatch);
+            else if (selectedRoom) data = data.filter(r => r.room === selectedRoom);
+            else if (selectedTeacher) data = data.filter(r => r.teacher === selectedTeacher);
+            else data = data.filter(r => r.batch === currentBatch);
+            
+            displayRoutine(data, day);
+        }
+
+        function displayRoutine(routines, day) {
+            const table = document.getElementById('routineTable');
+            if (!routines.length) {
+                table.innerHTML = `<div class="no-data"><p style="font-size:3em;">📚</p><p><strong>No classes for ${day}</strong></p></div>`;
+                return;
+            }
+            
+            const grouped = {};
+            routines.forEach(r => {
+                if (!grouped[r.time]) grouped[r.time] = [];
+                grouped[r.time].push(r);
+            });
+            
+            let html = '<table><thead><tr><th>⏰ Time</th><th>📖 Course</th><th>👥 Batch</th><th>🏫 Room</th><th>👨‍🏫 Teacher</th></tr></thead><tbody>';
+            
+            Object.keys(grouped).sort().forEach(time => {
+                grouped[time].forEach((r, i) => {
+                    html += `<tr>${i === 0 ? `<td rowspan="${grouped[time].length}" class="time-cell">${time}</td>` : ''}
+                        <td><strong>${r.course}</strong></td>
+                        <td><span class="batch-badge">Batch ${r.batchDisplay}</span></td>
+                        <td>${r.room ? `<span class="room-badge">${r.room}</span>` : 'TBA'}</td>
+                        <td>${r.teacher ? `<span class="teacher-badge">${r.teacher}</span>` : 'TBA'}</td></tr>`;
+                });
+            });
+            
+            html += '</tbody></table>';
+            table.innerHTML = html;
+        }
+
+        function changeDay(offset) {
+            currentDate.setDate(currentDate.getDate() + offset);
+            document.getElementById('currentDay').textContent = currentDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('displayDay').textContent = days[currentDate.getDay()];
+            loadRoutine();
+        }
+
+        function resetFilter() {
+            document.getElementById('searchBatch').value = '';
+            document.getElementById('searchRoom').value = '';
+            document.getElementById('searchTeacher').value = '';
+            currentDate = new Date();
+            updateDateDisplay();
+            loadRoutine();
+        }
+
+        function updateDateDisplay() {
+            document.getElementById('currentDay').textContent = currentDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('displayDay').textContent = days[currentDate.getDay()];
+        }
+
+        function logout() {
+            localStorage.removeItem('miu_user');
+            window.location.href = 'login.html';
+        }
+
+        // Init
+        const user = checkAuth();
+        if (user) {
+            currentBatch = user.batch;
+            document.getElementById('userInfo').textContent = `🎓 Batch: ${currentBatch} | ID: ${user.student_id}`;
+            updateDateDisplay();
+            fetchRoutineData();
+        }
+    </script>
+</body>
+</html>
