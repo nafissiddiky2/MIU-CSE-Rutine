@@ -32,7 +32,7 @@ miu-routine/
 │ └── auth.js # Authentication & registration logic
 └── README.md 
 
-##⚠️ Important Notes
+## ⚠️ Important Notes
 No backend required - Fully static site
 
 Student data stored in Google Sheets - No local database
