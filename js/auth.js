@@ -1,5 +1,5 @@
 // Google Sheets Web App URL for student registration
-const STUDENT_SHEET_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+const STUDENT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzo4tlkZ0X56AtQ351xyVh9EA3wvvsmoMN_VIc5q-2qOYzuQRg3p60nPikHafoeuc1B/exec';
 
 // Login Form Handler
 document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
@@ -80,7 +80,7 @@ document.getElementById('registerForm')?.addEventListener('submit', async (e) =>
     
     // Try to save to Google Sheet
     try {
-        if (STUDENT_SHEET_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+        if (STUDENT_SHEET_URL !== 'https://script.google.com/macros/s/AKfycbzo4tlkZ0X56AtQ351xyVh9EA3wvvsmoMN_VIc5q-2qOYzuQRg3p60nPikHafoeuc1B/exec') {
             await fetch(STUDENT_SHEET_URL, {
                 method: 'POST',
                 mode: 'no-cors',
