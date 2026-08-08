@@ -81,18 +81,19 @@ document.getElementById('registerForm')?.addEventListener('submit', async (e) =>
     // Try to save to Google Sheet
     try {
         if (STUDENT_SHEET_URL !== 'https://script.google.com/macros/s/AKfycbzo4tlkZ0X56AtQ351xyVh9EA3wvvsmoMN_VIc5q-2qOYzuQRg3p60nPikHafoeuc1B/exec') {
-            await fetch(STUDENT_SHEET_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    student_id: studentId,
-                    email: email,
-                    phone: phone,
-                    batch: batch,
-                    registration_date: new Date().toLocaleString()
-                })
-            });
+            fetch(url, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        student_id: 'TEST123',
+        email: 'test@test.com',
+        phone: '01712345678',
+        batch: '65',
+        registration_date: new Date().toLocaleString()
+    })
+}).then(() => console.log('Sent! Check your sheet'))
+.catch(err => console.error('Error:', err));
         }
     } catch (error) {
         console.log('Sheet save skipped or failed');
