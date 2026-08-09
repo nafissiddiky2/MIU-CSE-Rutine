@@ -1,5 +1,5 @@
 // Google Sheets Web App URL for student registration
-const STUDENT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzo4tlkZ0X56AtQ351xyVh9EA3wvvsmoMN_VIc5q-2qOYzuQRg3p60nPikHafoeuc1B/exec';
+const STUDENT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyNUpRuevlE7dxTgSTykCfYT_cQDsLIKWDKvlJKpAPnEDKUswySTTN-d6sjik9InKGfxg/exec';
 
 // Login Form Handler
 document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
