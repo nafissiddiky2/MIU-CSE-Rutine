@@ -1,5 +1,5 @@
 // Google Sheets Web App URL
-const STUDENT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyNUpRuevlE7dxTgSTykCfYT_cQDsLIKWDKvlJKpAPnEDKUswySTTN-d6sjik9InKGfxg/exec';
+const STUDENT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxOXxupqYJkH_K4QCwkxT7SdE07-CEAWmOQArnbBcraYrOn9tPHNivffod7Suwpdu_r9Q/exec';
 
 // Login Form Handler
 document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
