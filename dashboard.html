@@ -262,7 +262,7 @@
             if (selectedBatch) data = data.filter(r => r.batchDisplay === selectedBatch);
             else if (selectedRoom) data = data.filter(r => r.room === selectedRoom);
             else if (selectedTeacher) data = data.filter(r => r.teacher === selectedTeacher);
-            else data = data.filter(r => r.batch === currentBatch);
+            else data = data.filter(r => String(r.batch) === String(currentBatch));
             
             displayRoutine(data, day);
         }
