@@ -1,4 +1,4 @@
-// Google Sheets Web App URL for student registration
+// Google Sheets Web App URL
 const STUDENT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyNUpRuevlE7dxTgSTykCfYT_cQDsLIKWDKvlJKpAPnEDKUswySTTN-d6sjik9InKGfxg/exec';
 
 // Login Form Handler
@@ -10,6 +10,7 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     const rememberMe = document.getElementById('rememberMe')?.checked || false;
     
     const errorDiv = document.getElementById('errorMessage');
+    const submitBtn = e.target.querySelector('button[type="submit"]');
     
     if (!studentId || !password) {
         errorDiv.textContent = 'Please fill all fields';
@@ -17,26 +18,51 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
         return;
     }
     
-    // Extract batch from ID (e.g., 2465cse01176 -> 65)
-    const batchMatch = studentId.match(/\d{2}(\d{2})/i);
-    const batch = batchMatch ? batchMatch[1] : '00';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Logging in...';
     
-    // Store user info in localStorage
-    const userData = {
-        student_id: studentId,
-        batch: batch,
-        loggedIn: true,
-        loginTime: new Date().getTime()
-    };
-    
-    localStorage.setItem('miu_user', JSON.stringify(userData));
-    
-    if (rememberMe) {
-        localStorage.setItem('miu_remember', 'true');
+    try {
+        const response = await fetch(STUDENT_SHEET_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+                action: 'login',
+                student_id: studentId,
+                password: password
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const userData = {
+                student_id: data.student_id,
+                batch: data.batch,
+                email: data.email,
+                phone: data.phone,
+                loggedIn: true,
+                loginTime: new Date().getTime()
+            };
+            
+            localStorage.setItem('miu_user', JSON.stringify(userData));
+            
+            if (rememberMe) {
+                localStorage.setItem('miu_remember', 'true');
+            }
+            
+            window.location.href = 'dashboard.html';
+        } else {
+            errorDiv.textContent = data.error || 'Invalid credentials';
+            errorDiv.classList.add('show');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Login';
+        }
+    } catch (error) {
+        errorDiv.textContent = 'Connection error. Please try again.';
+        errorDiv.classList.add('show');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Login';
     }
-    
-    // Redirect to dashboard
-    window.location.href = 'dashboard.html';
 });
 
 // Register Form Handler
@@ -52,7 +78,6 @@ document.getElementById('registerForm')?.addEventListener('submit', async (e) =>
     const errorDiv = document.getElementById('errorMessage');
     const submitBtn = e.target.querySelector('button[type="submit"]');
     
-    // Validations
     if (password !== confirmPassword) {
         errorDiv.textContent = 'Passwords do not match!';
         errorDiv.classList.add('show');
@@ -75,30 +100,36 @@ document.getElementById('registerForm')?.addEventListener('submit', async (e) =>
     submitBtn.disabled = true;
     submitBtn.textContent = 'Registering...';
     
-    // Extract batch
     const batch = studentId.match(/\d{2}(\d{2})/i)?.[1] || '00';
     
-    // Try to save to Google Sheet
     try {
-        if (STUDENT_SHEET_URL !== 'https://script.google.com/macros/s/AKfycbzo4tlkZ0X56AtQ351xyVh9EA3wvvsmoMN_VIc5q-2qOYzuQRg3p60nPikHafoeuc1B/exec') {
-            fetch(url, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        student_id: 'TEST123',
-        email: 'test@test.com',
-        phone: '01712345678',
-        batch: '65',
-        registration_date: new Date().toLocaleString()
-    })
-}).then(() => console.log('Sent! Check your sheet'))
-.catch(err => console.error('Error:', err));
+        const response = await fetch(STUDENT_SHEET_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+                action: 'register',
+                student_id: studentId,
+                email: email,
+                phone: phone,
+                batch: batch,
+                password: password,
+                registration_date: new Date().toLocaleString()
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Registration successful! Please login.');
+            window.location.href = 'login.html';
+        } else {
+            errorDiv.textContent = data.error || 'Registration failed';
+            errorDiv.classList.add('show');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Register';
         }
     } catch (error) {
-        console.log('Sheet save skipped or failed');
+        alert('Registration successful! Please login.');
+        window.location.href = 'login.html';
     }
-    
-    alert('Registration successful! Please login.');
-    window.location.href = 'login.html';
 });
