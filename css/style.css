@@ -559,18 +559,22 @@ select option {
 }
 
 
-/* Simple Footer */
+/* Simple Footer - Works on all pages */
 .footer {
     background: #ffffff;
     text-align: center;
-    padding: 15px 20px;
-    margin-top: 40px;
-    border-top: 1px solid #e0e0e0;
+    padding: 17px 20px;
+    margin-top: 20px;
+    margin-bottom: 0;
+    border-top: 3px solid #bfe972;
+    width: 100%;
+    position: relative;
+    bottom: 0;
 }
 
 .footer p {
     margin: 0;
-    font-size: 1.00em;
+    font-size: 1 em;
     color: #666666;
 }
 
