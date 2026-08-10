@@ -14,7 +14,6 @@
             <div class="nav-user"><span id="userInfo">Loading...</span><button onclick="logout()" class="btn btn-outline">Sign Out</button></div>
         </div>
     </nav>
-
     <div class="dashboard-container">
         <div class="search-section">
             <div class="date-navigator">
@@ -37,94 +36,50 @@
             <div id="routineTable" class="routine-table"><div class="loading"><div class="spinner"></div><p>Loading routine data...</p></div></div>
         </div>
     </div>
-
     <footer class="footer"><p>&copy; 2026 MIU CSE Department. All rights reserved. Developed By <a href="https://nafissiddiky2.github.io/Portfolio/">S.A.Nafis</a></p></footer>
 
     <script>
         const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1pH0ZzPfwNNvvFpDR8N7eDtqeXKd1KcDKNRz4ca42T9U/export?format=csv&gid=350123385';
-        const teacherNames = {
-            'DMR':'Prof. Dr. Mizanur Rahman','DRA':'Prof. Dr. Ramit Azad','MRI':'Mohammad Rafiqul Islam','TA':'Tanvir Ahmed',
-            'ZH':'Zahurul Haque','SSM':'Shreshtha Sayantika Maitra','JF':'Jannatul Ferdaous','NET':'Noor Easrib Tiba',
-            'SA':'Soaib Abdullah','HR':'Hasibul Rupok','MH':'Maoyejatun Hasana','MMU':'Mohammad Monzu Uddin',
-            'DAKA':'Dr. Mohammad Abul Kalam Azad','DSS':'Dr. Sabiha Sultana','MT':'Md. Toha','AAA':'Ahmad Abdullah Arman',
-            'BT':'Bushra Tasnim','DMMS':'Dr. Mohammad Mohiuddin Sarker','SH':'Md Shakil Hossain','ZI':'Md. Zahidul Islam',
-            'MMM':'Mohammed Mohaimen','JH':'Jayed Hasan Rakib','MAS':'MD. Adam Shafiullah','TK':'Tahsin Kabir',
-            'DHR':'Dr. Hafizur Rahman','MAI':'Muhammad Asadul Islam','LJ':'Ms. Liza Jourder'
-        };
+        const teacherNames = {'DMR':'Prof. Dr. Mizanur Rahman','DRA':'Prof. Dr. Ramit Azad','MRI':'Mohammad Rafiqul Islam','TA':'Tanvir Ahmed','ZH':'Zahurul Haque','SSM':'Shreshtha Sayantika Maitra','JF':'Jannatul Ferdaous','NET':'Noor Easrib Tiba','SA':'Soaib Abdullah','HR':'Hasibul Rupok','MH':'Maoyejatun Hasana','MMU':'Mohammad Monzu Uddin','DAKA':'Dr. Mohammad Abul Kalam Azad','DSS':'Dr. Sabiha Sultana','MT':'Md. Toha','AAA':'Ahmad Abdullah Arman','BT':'Bushra Tasnim','DMMS':'Dr. Mohammad Mohiuddin Sarker','SH':'Md Shakil Hossain','ZI':'Md. Zahidul Islam','MMM':'Mohammed Mohaimen','JH':'Jayed Hasan Rakib','MAS':'MD. Adam Shafiullah','TK':'Tahsin Kabir','DHR':'Dr. Hafizur Rahman','MAI':'Muhammad Asadul Islam','LJ':'Ms. Liza Jourder'};
+        let currentDate=new Date(),currentBatch='',currentBatchDisplay='',allRoutines=[];
+        const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-        let currentDate = new Date(), currentBatch = '', allRoutines = [];
-        const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        function formatTime(t){const h=parseInt(t.split(':')[0]);return t+' '+(h>=9&&h<=11?'AM':'PM');}
 
-        function formatTime(t) {
-            const h = parseInt(t.split(':')[0]);
-            return t + ' ' + (h >= 9 && h <= 11 ? 'AM' : 'PM');
-        }
-
-        function parseCSV(csv) {
-            const lines = csv.split('\n'), routines = [];
-            const dayMap = {sat:'Saturday',sun:'Sunday',mon:'Monday',tue:'Tuesday',wed:'Wednesday',thu:'Thursday',fri:'Friday'};
-            const timeSlots = [];
-            let currentDay = '';
-
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-
-                const cells = [];
-                let c = '', q = false;
-                for (let j = 0; j < line.length; j++) {
-                    if (line[j] === '"') q = !q;
-                    else if (line[j] === ',' && !q) { cells.push(c.trim()); c = ''; }
-                    else c += line[j];
-                }
+        function parseCSV(csv){
+            const lines=csv.split('\n'),routines=[],dayMap={sat:'Saturday',sun:'Sunday',mon:'Monday',tue:'Tuesday',wed:'Wednesday',thu:'Thursday',fri:'Friday'},timeSlots=[];
+            let currentDay='';
+            for(let i=0;i<lines.length;i++){
+                const line=lines[i].trim();if(!line)continue;
+                const cells=[];let c='',q=false;
+                for(let j=0;j<line.length;j++){if(line[j]==='"')q=!q;else if(line[j]===','&&!q){cells.push(c.trim());c='';}else c+=line[j];}
                 cells.push(c.trim());
-
-                const first = cells[0].toLowerCase().trim();
-                if (first === 'abbreviation') break;
-                if (first.startsWith('..........') || first.includes('jannatul')) break;
-
-                if (cells[0] === 'Day' && cells[1] === 'Room') {
-                    for (let k = 2; k < cells.length; k++) {
-                        if (cells[k] && cells[k].includes(':')) timeSlots.push(cells[k]);
-                    }
-                    continue;
-                }
-
-                if (first.includes('manarat') || first.includes('class routine') || first.includes('updated on')) continue;
-                if (dayMap[first]) { currentDay = dayMap[first]; continue; }
-
-                if (currentDay && cells.length >= 3 && cells[1] && timeSlots.length > 0) {
-                    const room = cells[1];
-                    for (let j = 2; j < cells.length && j - 2 < timeSlots.length; j++) {
-                        const data = cells[j]?.trim();
-                        if (!data) continue;
-
-                        let clean = data;
-                        // Remove outer parentheses
-                        clean = clean.replace(/^\(/, '').replace(/\)$/, '');
-                        // FIX: Insert / between ) and course code: "(65+64+63) GED3101" → "(65+64+63)/GED3101"
-                        clean = clean.replace(/\)\s+([A-Z])/g, ')/$1');
-                        // Remove all remaining parentheses
-                        clean = clean.replace(/[()]/g, '');
-                        // Split by /
-                        const parts = clean.split('/');
-                        if (parts.length < 2) continue;
-
-                        let batchPart = parts[0].trim(), course = '', teacher = '';
-                        if (parts.length === 2) { course = parts[1].trim(); }
-                        else if (parts.length === 3) { course = parts[1].trim(); teacher = parts[2].trim(); }
-                        else if (parts.length === 4) { course = parts[1] + '/' + parts[2]; teacher = parts[3].trim(); }
-                        if (!course) continue;
-
-                        const tokens = batchPart.split('+').map(t => t.trim()).filter(Boolean);
-                        for (const token of tokens) {
-                            const match = token.match(/^(\d+)(\([FM]\))?/);
-                            if (match) {
-                                routines.push({
-                                    day: currentDay, time: timeSlots[j - 2],
-                                    batch: match[1], batchDisplay: match[1] + (match[2] || ''),
-                                    section: match[2] || '', course, room, teacher
-                                });
+                const first=cells[0].toLowerCase().trim();
+                if(first==='abbreviation')break;
+                if(first.startsWith('..........')||first.includes('jannatul'))break;
+                if(cells[0]==='Day'&&cells[1]==='Room'){for(let k=2;k<cells.length;k++){if(cells[k]&&cells[k].includes(':'))timeSlots.push(cells[k]);}continue;}
+                if(first.includes('manarat')||first.includes('class routine')||first.includes('updated on'))continue;
+                if(dayMap[first]){currentDay=dayMap[first];continue;}
+                if(currentDay&&cells.length>=3&&cells[1]&&timeSlots.length>0){
+                    const room=cells[1];
+                    for(let j=2;j<cells.length&&j-2<timeSlots.length;j++){
+                        const data=cells[j]?.trim();if(!data)continue;
+                        // FIXED: Don't remove inner parentheses - keep (F) and (M)
+                        let clean=data;
+                        clean=clean.replace(/^\(/,'').replace(/\)$/,'');  // Only outer parentheses
+                        clean=clean.replace(/\)\s+([A-Z])/g,')/$1');      // Insert missing /
+                        // NOTE: We do NOT remove all parentheses anymore!
+                        const parts=clean.split('/');if(parts.length<2)continue;
+                        let batchPart=parts[0].trim(),course='',teacher='';
+                        if(parts.length===2){course=parts[1].trim();}
+                        else if(parts.length===3){course=parts[1].trim();teacher=parts[2].trim();}
+                        else if(parts.length===4){course=parts[1]+'/'+parts[2];teacher=parts[3].trim();}
+                        if(!course)continue;
+                        const tokens=batchPart.split('+').map(t=>t.trim()).filter(Boolean);
+                        for(const token of tokens){
+                            const match=token.match(/^(\d+)(\([FM]\))?/);
+                            if(match){
+                                routines.push({day:currentDay,time:timeSlots[j-2],batch:match[1],batchDisplay:match[1]+(match[2]||''),section:match[2]||'',course,room,teacher});
                             }
                         }
                     }
@@ -133,105 +88,48 @@
             return routines;
         }
 
-        async function fetchRoutineData() {
-            try {
-                const r = await fetch(SHEET_CSV_URL), csv = await r.text();
-                allRoutines = parseCSV(csv);
-                console.log('Loaded', allRoutines.length, 'routines');
-                populateDropdowns();
-                loadRoutine();
-            } catch (e) { console.error(e); }
+        async function fetchRoutineData(){try{const r=await fetch(SHEET_CSV_URL),csv=await r.text();allRoutines=parseCSV(csv);console.log('Loaded',allRoutines.length,'routines');populateDropdowns();loadRoutine();}catch(e){console.error(e);}}
+
+        function populateDropdowns(){
+            const allBatches=[...new Set(allRoutines.map(r=>r.batchDisplay))].sort();
+            const rooms=[...new Set(allRoutines.map(r=>r.room))].filter(Boolean).sort();
+            const teachers=[...new Set(allRoutines.map(r=>r.teacher))].filter(Boolean).sort();
+            console.log('All batches for dropdown:',allBatches);
+            const bs=document.getElementById('searchBatch');bs.innerHTML='<option value="">My Batch</option>';
+            allBatches.forEach(b=>bs.innerHTML+=`<option value="${b}"> Batch ${b}</option>`);
+            const rs=document.getElementById('searchRoom');rs.innerHTML='<option value="">All Rooms</option>';
+            rooms.forEach(r=>rs.innerHTML+=`<option value="${r}"> ${r}</option>`);
+            const ts=document.getElementById('searchTeacher');ts.innerHTML='<option value="">All Teachers</option>';
+            teachers.forEach(t=>ts.innerHTML+=`<option value="${t}"> ${t} - ${teacherNames[t]||t}</option>`);
         }
 
-        function populateDropdowns() {
-            const batches = [...new Set(allRoutines.map(r => r.batchDisplay))].sort();
-            const rooms = [...new Set(allRoutines.map(r => r.room))].filter(Boolean).sort();
-            const teachers = [...new Set(allRoutines.map(r => r.teacher))].filter(Boolean).sort();
+        function onFilterChange(){const b=document.getElementById('searchBatch').value,r=document.getElementById('searchRoom').value,t=document.getElementById('searchTeacher').value;if(b){document.getElementById('searchRoom').value='';document.getElementById('searchTeacher').value='';}if(r){document.getElementById('searchBatch').value='';document.getElementById('searchTeacher').value='';}if(t){document.getElementById('searchBatch').value='';document.getElementById('searchRoom').value='';}loadRoutine();}
 
-            const bs = document.getElementById('searchBatch');
-            batches.forEach(b => bs.innerHTML += `<option value="${b}"> Batch ${b}</option>`);
-
-            const rs = document.getElementById('searchRoom');
-            rooms.forEach(r => rs.innerHTML += `<option value="${r}"> ${r}</option>`);
-
-            const ts = document.getElementById('searchTeacher');
-            teachers.forEach(t => ts.innerHTML += `<option value="${t}"> ${t} - ${teacherNames[t] || t}</option>`);
+        function loadRoutine(){
+            const day=days[currentDate.getDay()],sb=document.getElementById('searchBatch').value,sr=document.getElementById('searchRoom').value,st=document.getElementById('searchTeacher').value;
+            const bi=document.getElementById('batchInfo');if(st)bi.textContent='👨‍🏫 Teacher: '+st;else if(sr)bi.textContent='🏫 Room: '+sr;else if(sb)bi.textContent='📚 Batch: '+sb;else bi.textContent='📚 Your Batch: '+currentBatchDisplay;
+            let data=allRoutines.filter(r=>r.day===day);
+            if(sb)data=data.filter(r=>r.batchDisplay===sb);else if(sr)data=data.filter(r=>r.room===sr);else if(st)data=data.filter(r=>r.teacher===st);else data=data.filter(r=>r.batchDisplay===currentBatchDisplay||r.batch===currentBatch);
+            displayRoutine(data,day);
         }
 
-        function onFilterChange() {
-            const b = document.getElementById('searchBatch').value;
-            const r = document.getElementById('searchRoom').value;
-            const t = document.getElementById('searchTeacher').value;
-            if (b) { document.getElementById('searchRoom').value = ''; document.getElementById('searchTeacher').value = ''; }
-            if (r) { document.getElementById('searchBatch').value = ''; document.getElementById('searchTeacher').value = ''; }
-            if (t) { document.getElementById('searchBatch').value = ''; document.getElementById('searchRoom').value = ''; }
-            loadRoutine();
+        function displayRoutine(routines,day){
+            const table=document.getElementById('routineTable');
+            if(!routines.length){table.innerHTML=`<div class="no-data"><p style="font-size:3em;">📚</p><p><strong>No classes for ${day}</strong></p></div>`;return;}
+            const grouped={};routines.forEach(r=>{if(!grouped[r.time])grouped[r.time]=[];grouped[r.time].push(r);});
+            let html='<table><thead><tr><th>⏰ Time</th><th>📖 Course</th><th>👥 Batch</th><th>🏫 Room</th><th>👨‍🏫 Teacher</th></tr></thead><tbody>';
+            Object.keys(grouped).sort().forEach(time=>{const dt=formatTime(time);grouped[time].forEach((r,i)=>{html+=`<tr>${i===0?`<td rowspan="${grouped[time].length}" class="time-cell">${dt}</td>`:''}<td><strong>${r.course}</strong></td><td><span class="batch-badge">Batch ${r.batchDisplay}</span></td><td>${r.room?`<span class="room-badge">${r.room}</span>`:'TBA'}</td><td>${r.teacher?`<span class="teacher-badge">${r.teacher}</span>`:'TBA'}</td></tr>`;});});
+            html+='</tbody></table>';table.innerHTML=html;
         }
 
-        function loadRoutine() {
-            const day = days[currentDate.getDay()];
-            const sb = document.getElementById('searchBatch').value;
-            const sr = document.getElementById('searchRoom').value;
-            const st = document.getElementById('searchTeacher').value;
+        function changeDay(o){currentDate.setDate(currentDate.getDate()+o);updateDateDisplay();loadRoutine();}
+        function resetFilter(){document.getElementById('searchBatch').value='';document.getElementById('searchRoom').value='';document.getElementById('searchTeacher').value='';currentDate=new Date();updateDateDisplay();loadRoutine();}
+        function updateDateDisplay(){document.getElementById('currentDay').textContent=currentDate.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});document.getElementById('displayDay').textContent=days[currentDate.getDay()];}
+        function logout(){localStorage.removeItem('miu_user');window.location.href='login.html';}
 
-            const bi = document.getElementById('batchInfo');
-            if (st) bi.textContent = '👨‍🏫 Teacher: ' + st;
-            else if (sr) bi.textContent = '🏫 Room: ' + sr;
-            else if (sb) bi.textContent = '📚 Batch: ' + sb;
-            else bi.textContent = '📚 Your Batch: ' + currentBatch;
-
-            let data = allRoutines.filter(r => r.day === day);
-            if (sb) data = data.filter(r => r.batchDisplay === sb);
-            else if (sr) data = data.filter(r => r.room === sr);
-            else if (st) data = data.filter(r => r.teacher === st);
-            else data = data.filter(r => String(r.batch) === String(currentBatch));
-
-            displayRoutine(data, day);
-        }
-
-        function displayRoutine(routines, day) {
-            const table = document.getElementById('routineTable');
-            if (!routines.length) {
-                table.innerHTML = `<div class="no-data"><p style="font-size:3em;">📚</p><p><strong>No classes for ${day}</strong></p></div>`;
-                return;
-            }
-            const grouped = {};
-            routines.forEach(r => { if (!grouped[r.time]) grouped[r.time] = []; grouped[r.time].push(r); });
-
-            let html = '<table><thead><tr><th>⏰ Time</th><th>📖 Course</th><th>👥 Batch</th><th>🏫 Room</th><th>👨‍🏫 Teacher</th></tr></thead><tbody>';
-
-            Object.keys(grouped).sort().forEach(time => {
-                const dt = formatTime(time);
-                grouped[time].forEach((r, i) => {
-                    html += `<tr>
-                        ${i === 0 ? `<td rowspan="${grouped[time].length}" class="time-cell">${dt}</td>` : ''}
-                        <td><strong>${r.course}</strong></td>
-                        <td><span class="batch-badge">Batch ${r.batchDisplay}</span></td>
-                        <td>${r.room ? `<span class="room-badge">${r.room}</span>` : 'TBA'}</td>
-                        <td>${r.teacher ? `<span class="teacher-badge">${r.teacher}</span>` : 'TBA'}</td>
-                    </tr>`;
-                });
-            });
-            html += '</tbody></table>';
-            table.innerHTML = html;
-        }
-
-        function changeDay(o) { currentDate.setDate(currentDate.getDate() + o); updateDateDisplay(); loadRoutine(); }
-        function resetFilter() { document.getElementById('searchBatch').value = ''; document.getElementById('searchRoom').value = ''; document.getElementById('searchTeacher').value = ''; currentDate = new Date(); updateDateDisplay(); loadRoutine(); }
-        function updateDateDisplay() { document.getElementById('currentDay').textContent = currentDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); document.getElementById('displayDay').textContent = days[currentDate.getDay()]; }
-        function logout() { localStorage.removeItem('miu_user'); window.location.href = 'login.html'; }
-
-        const ud = localStorage.getItem('miu_user');
-        if (ud) {
-            const u = JSON.parse(ud);
-            currentBatch = u.batch;
-            document.getElementById('userInfo').textContent = '🎓 Batch: ' + currentBatch + ' | ID: ' + u.student_id;
-            document.getElementById('batchInfo').textContent = '📚 Your Batch: ' + currentBatch;
-            updateDateDisplay();
-            fetchRoutineData();
-        } else {
-            window.location.href = 'login.html';
-        }
+        const ud=localStorage.getItem('miu_user');
+        if(ud){const u=JSON.parse(ud);currentBatch=u.batch?String(u.batch).replace(/\([FM]\)/,''):'00';currentBatchDisplay=u.batch||currentBatch;document.getElementById('userInfo').textContent='🎓 Batch: '+currentBatchDisplay+' | ID: '+u.student_id;document.getElementById('batchInfo').textContent='📚 Your Batch: '+currentBatchDisplay;updateDateDisplay();fetchRoutineData();}
+        else window.location.href='login.html';
     </script>
 </body>
 </html>

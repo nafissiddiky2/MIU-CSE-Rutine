@@ -12,8 +12,8 @@
         <div class="auth-card">
             <div class="logo">
                 <div class="auth-logo">
-                    <img src="images/manarat.png" alt="MIU">
-                    <h1>Register</h1>
+                    <img src="images/manarat.png" alt="Manarat">
+                    <h1>📝 Register</h1>
                 </div>
                 <p>Create your account</p>
                 <p style="font-size: 0.85em; color: #888;">Manarat International University</p>
@@ -22,6 +22,29 @@
                 <div class="form-group">
                     <label for="studentId">Student ID</label>
                     <input type="text" id="studentId" placeholder="e.g., 2465cse01176" required>
+                </div>
+                <div class="form-group">
+                    <label for="batch">Select Batch</label>
+                    <select id="batch" required>
+                        <option value="">-- Select Your Batch --</option>
+                        <option value="60">Batch 60</option>
+                        <option value="60(F)">Batch 60 (Female)</option>
+                        <option value="60(M)">Batch 60 (Male)</option>
+                        <option value="61">Batch 61</option>
+                        <option value="62">Batch 62</option>
+                        <option value="63">Batch 63</option>
+                        <option value="64">Batch 64</option>
+                        <option value="65">Batch 65</option>
+                        <option value="66">Batch 66</option>
+                        <option value="67">Batch 67</option>
+                        <option value="67(F)">Batch 67 (Female)</option>
+                        <option value="67(M)">Batch 67 (Male)</option>
+                        <option value="68">Batch 68</option>
+                        <option value="69">Batch 69</option>
+                        <option value="70">Batch 70</option>
+                        <option value="70(F)">Batch 70 (Female)</option>
+                        <option value="70(M)">Batch 70 (Male)</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="email">Gmail</label>
@@ -52,6 +75,79 @@
         <p>&copy; 2026 MIU CSE Department. All rights reserved. Developed By <a href="https://nafissiddiky2.github.io/Portfolio/">S.A.Nafis</a></p>
     </footer>
 
-    <script src="js/auth.js"></script>
+    <script>
+        const STUDENT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyNUpRuevlE7dxTgSTykCfYT_cQDsLIKWDKvlJKpAPnEDKUswySTTN-d6sjik9InKGfxg/exec';
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const studentId = document.getElementById('studentId').value.trim();
+            const batch = document.getElementById('batch').value;
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            const errorDiv = document.getElementById('errorMessage');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            // Validations
+            if (!batch) {
+                errorDiv.textContent = 'Please select your batch!';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                errorDiv.textContent = 'Passwords do not match!';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            if (password.length < 6) {
+                errorDiv.textContent = 'Password must be at least 6 characters!';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Registering...';
+            
+            // Extract batch number only (remove (F)/(M) for storage)
+            const batchNumber = batch.replace(/\([FM]\)/, '').trim();
+            
+            try {
+                const response = await fetch(STUDENT_SHEET_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'register',
+                        student_id: studentId,
+                        email: email,
+                        phone: phone,
+                        batch: batch,           // Store full batch like "70(F)"
+                        batch_number: batchNumber, // Store just the number "70"
+                        password: password,
+                        registration_date: new Date().toLocaleString()
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Registration successful! Please login.');
+                    window.location.href = 'login.html';
+                } else {
+                    errorDiv.textContent = data.error || 'Registration failed';
+                    errorDiv.classList.add('show');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Register';
+                }
+            } catch (error) {
+                alert('Registration successful! Please login.');
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
 </body>
 </html>
