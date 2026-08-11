@@ -82,7 +82,7 @@
                 if(first.startsWith('..........')||first.includes('jannatul'))break;
                 if(cells[0]==='Day'&&cells[1]==='Room'){for(let k=2;k<cells.length;k++){if(cells[k]&&cells[k].includes(':'))timeSlots.push(cells[k]);}continue;}
                 if(first.includes('manarat')||first.includes('class routine')||first.includes('updated on'))continue;
-                if(dayMap[first]){currentDay=dayMap[first];continue;}
+                if(dayMap[first]){currentDay=dayMap[first];}
                 if(currentDay&&cells.length>=3&&cells[1]&&timeSlots.length>0){
                     const room=cells[1];
                     for(let j=2;j<cells.length&&j-2<timeSlots.length;j++){
