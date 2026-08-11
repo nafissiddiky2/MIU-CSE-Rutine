@@ -39,12 +39,35 @@
     <footer class="footer"><p>&copy; 2026 MIU CSE Department. All rights reserved. Developed By <a href="https://nafissiddiky2.github.io/Portfolio/">S.A.Nafis</a></p></footer>
 
     <script>
-        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1pH0ZzPfwNNvvFpDR8N7eDtqeXKd1KcDKNRz4ca42T9U/export?format=csv&gid=350123385';
-        const teacherNames = {'DMR':'Prof. Dr. Mizanur Rahman','DRA':'Prof. Dr. Ramit Azad','MRI':'Mohammad Rafiqul Islam','TA':'Tanvir Ahmed','ZH':'Zahurul Haque','SSM':'Shreshtha Sayantika Maitra','JF':'Jannatul Ferdaous','NET':'Noor Easrib Tiba','SA':'Soaib Abdullah','HR':'Hasibul Rupok','MH':'Maoyejatun Hasana','MMU':'Mohammad Monzu Uddin','DAKA':'Dr. Mohammad Abul Kalam Azad','DSS':'Dr. Sabiha Sultana','MT':'Md. Toha','AAA':'Ahmad Abdullah Arman','BT':'Bushra Tasnim','DMMS':'Dr. Mohammad Mohiuddin Sarker','SH':'Md Shakil Hossain','ZI':'Md. Zahidul Islam','MMM':'Mohammed Mohaimen','JH':'Jayed Hasan Rakib','MAS':'MD. Adam Shafiullah','TK':'Tahsin Kabir','DHR':'Dr. Hafizur Rahman','MAI':'Muhammad Asadul Islam','LJ':'Ms. Liza Jourder'};
+        const SHEET_CSV_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vQovxGy5N4TVqkJESrtQaaW20hhzqyppbgDKsiZs11fJp7pQoDfnaYjjhG5xcL6wXkijYF4Hi8FO36g/pub?output=csv&gid=350123385';
+        const teacherNames={'DMR':'Prof. Dr. Mizanur Rahman','DRA':'Prof. Dr. Ramit Azad','MRI':'Mohammad Rafiqul Islam','TA':'Tanvir Ahmed','ZH':'Zahurul Haque','SSM':'Shreshtha Sayantika Maitra','JF':'Jannatul Ferdaous','NET':'Noor Easrib Tiba','SA':'Soaib Abdullah','HR':'Hasibul Rupok','MH':'Maoyejatun Hasana','MMU':'Mohammad Monzu Uddin','DAKA':'Dr. Mohammad Abul Kalam Azad','DSS':'Dr. Sabiha Sultana','MT':'Md. Toha','AAA':'Ahmad Abdullah Arman','BT':'Bushra Tasnim','DMMS':'Dr. Mohammad Mohiuddin Sarker','SH':'Md Shakil Hossain','ZI':'Md. Zahidul Islam','MMM':'Mohammed Mohaimen','JH':'Jayed Hasan Rakib','MAS':'MD. Adam Shafiullah','TK':'Tahsin Kabir','DHR':'Dr. Hafizur Rahman','MAI':'Muhammad Asadul Islam','LJ':'Ms. Liza Jourder'};
         let currentDate=new Date(),currentBatch='',currentBatchDisplay='',allRoutines=[];
         const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-        function formatTime(t){const h=parseInt(t.split(':')[0]);return t+' '+(h>=9&&h<=11?'AM':'PM');}
+        // Convert 24h time to 12h display: "14:00" → "2:00 PM"
+        function to12Hour(t){
+            const parts=t.trim().split(':');
+            let h=parseInt(parts[0]);
+            const m=parts[1];
+            const ampm=h>=12?'PM':'AM';
+            if(h>12)h-=12;
+            if(h===0)h=12;
+            return h+':'+m+' '+ampm;
+        }
+
+        function formatTime(t){
+            if(!t)return'';
+            const parts=t.split('-');
+            const start=parts[0].trim();
+            const end=parts[1]?parts[1].trim():start;
+            return to12Hour(start)+' - '+to12Hour(end);
+        }
+
+        // Get start minutes for sorting (handles 24h format)
+        function timeToMinutes(t){
+            const start=t.split('-')[0].trim().split(':');
+            return parseInt(start[0])*60+parseInt(start[1]);
+        }
 
         function parseCSV(csv){
             const lines=csv.split('\n'),routines=[],dayMap={sat:'Saturday',sun:'Sunday',mon:'Monday',tue:'Tuesday',wed:'Wednesday',thu:'Thursday',fri:'Friday'},timeSlots=[];
@@ -64,11 +87,7 @@
                     const room=cells[1];
                     for(let j=2;j<cells.length&&j-2<timeSlots.length;j++){
                         const data=cells[j]?.trim();if(!data)continue;
-                        // FIXED: Don't remove inner parentheses - keep (F) and (M)
-                        let clean=data;
-                        clean=clean.replace(/^\(/,'').replace(/\)$/,'');  // Only outer parentheses
-                        clean=clean.replace(/\)\s+([A-Z])/g,')/$1');      // Insert missing /
-                        // NOTE: We do NOT remove all parentheses anymore!
+                        let clean=data.replace(/^\(/,'').replace(/\)$/,'').replace(/\)\s+([A-Z])/g,')/$1');
                         const parts=clean.split('/');if(parts.length<2)continue;
                         let batchPart=parts[0].trim(),course='',teacher='';
                         if(parts.length===2){course=parts[1].trim();}
@@ -78,14 +97,26 @@
                         const tokens=batchPart.split('+').map(t=>t.trim()).filter(Boolean);
                         for(const token of tokens){
                             const match=token.match(/^(\d+)(\([FM]\))?/);
-                            if(match){
-                                routines.push({day:currentDay,time:timeSlots[j-2],batch:match[1],batchDisplay:match[1]+(match[2]||''),section:match[2]||'',course,room,teacher});
-                            }
+                            if(match)routines.push({day:currentDay,time:timeSlots[j-2],startMin:timeToMinutes(timeSlots[j-2]),batch:match[1],batchDisplay:match[1]+(match[2]||''),course,room,teacher});
                         }
                     }
                 }
             }
             return routines;
+        }
+
+        function mergeConsecutive(routines){
+            if(!routines.length)return[];
+            routines.sort((a,b)=>a.startMin-b.startMin);
+            const merged=[];let prev=null;
+            for(const r of routines){
+                if(prev&&prev.course===r.course&&prev.batch===r.batch&&prev.room===r.room&&prev.teacher===r.teacher&&r.startMin===prev.startMin+60){
+                    const pParts=prev.time.split('-'),rParts=r.time.split('-');
+                    prev.time=pParts[0].trim()+' - '+rParts[1].trim();
+                }else{if(prev)merged.push(prev);prev={...r};}
+            }
+            if(prev)merged.push(prev);
+            return merged;
         }
 
         async function fetchRoutineData(){try{const r=await fetch(SHEET_CSV_URL),csv=await r.text();allRoutines=parseCSV(csv);console.log('Loaded',allRoutines.length,'routines');populateDropdowns();loadRoutine();}catch(e){console.error(e);}}
@@ -94,7 +125,6 @@
             const allBatches=[...new Set(allRoutines.map(r=>r.batchDisplay))].sort();
             const rooms=[...new Set(allRoutines.map(r=>r.room))].filter(Boolean).sort();
             const teachers=[...new Set(allRoutines.map(r=>r.teacher))].filter(Boolean).sort();
-            console.log('All batches for dropdown:',allBatches);
             const bs=document.getElementById('searchBatch');bs.innerHTML='<option value="">My Batch</option>';
             allBatches.forEach(b=>bs.innerHTML+=`<option value="${b}"> Batch ${b}</option>`);
             const rs=document.getElementById('searchRoom');rs.innerHTML='<option value="">All Rooms</option>';
@@ -110,15 +140,16 @@
             const bi=document.getElementById('batchInfo');if(st)bi.textContent='👨‍🏫 Teacher: '+st;else if(sr)bi.textContent='🏫 Room: '+sr;else if(sb)bi.textContent='📚 Batch: '+sb;else bi.textContent='📚 Your Batch: '+currentBatchDisplay;
             let data=allRoutines.filter(r=>r.day===day);
             if(sb)data=data.filter(r=>r.batchDisplay===sb);else if(sr)data=data.filter(r=>r.room===sr);else if(st)data=data.filter(r=>r.teacher===st);else data=data.filter(r=>r.batchDisplay===currentBatchDisplay||r.batch===currentBatch);
+            data=mergeConsecutive(data);
+            data.sort((a,b)=>a.startMin-b.startMin);
             displayRoutine(data,day);
         }
 
         function displayRoutine(routines,day){
             const table=document.getElementById('routineTable');
             if(!routines.length){table.innerHTML=`<div class="no-data"><p style="font-size:3em;">📚</p><p><strong>No classes for ${day}</strong></p></div>`;return;}
-            const grouped={};routines.forEach(r=>{if(!grouped[r.time])grouped[r.time]=[];grouped[r.time].push(r);});
             let html='<table><thead><tr><th>⏰ Time</th><th>📖 Course</th><th>👥 Batch</th><th>🏫 Room</th><th>👨‍🏫 Teacher</th></tr></thead><tbody>';
-            Object.keys(grouped).sort().forEach(time=>{const dt=formatTime(time);grouped[time].forEach((r,i)=>{html+=`<tr>${i===0?`<td rowspan="${grouped[time].length}" class="time-cell">${dt}</td>`:''}<td><strong>${r.course}</strong></td><td><span class="batch-badge">Batch ${r.batchDisplay}</span></td><td>${r.room?`<span class="room-badge">${r.room}</span>`:'TBA'}</td><td>${r.teacher?`<span class="teacher-badge">${r.teacher}</span>`:'TBA'}</td></tr>`;});});
+            routines.forEach(r=>{html+=`<tr><td class="time-cell">${formatTime(r.time)}</td><td><strong>${r.course}</strong></td><td><span class="batch-badge">Batch ${r.batchDisplay}</span></td><td>${r.room?`<span class="room-badge">${r.room}</span>`:'TBA'}</td><td>${r.teacher?`<span class="teacher-badge">${r.teacher}</span>`:'TBA'}</td></tr>`;});
             html+='</tbody></table>';table.innerHTML=html;
         }
 
